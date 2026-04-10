@@ -1,0 +1,33 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.class
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# VSCode settings
+.vscode/
+
+# macOS files
+.DS_Store
+
+# Specific files
+*scrap.ipynb
+
+# Temporary data
+data/
+
+# MLflow
+mlflow.db
+mlruns/*
+
+# Models
+*.joblib
