@@ -1,6 +1,6 @@
 import chromadb
 from sentence_transformers import SentenceTransformer
-from ingest import CHROMA_PATH, COLLECTION_NAME, EMBEDDING_MODEL
+from src.ingest import CHROMA_PATH, COLLECTION_NAME, EMBEDDING_MODEL
 from pprint import pprint
 
 
@@ -45,7 +45,7 @@ def retrieve(query, collection, embedding_model, n_results=3):
 if __name__ == "__main__":
     print("Loading collection...")
     collection = get_collection()
-    print(f"Loaded collection.")
+    print("Loaded collection.")
 
     query = "Do statins reduce cardiovascular risk?"
     embedding_model = SentenceTransformer(EMBEDDING_MODEL)
