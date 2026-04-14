@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from src.ingest import get_embedding_model
-from src.retrieve import get_collection, retrieve
+from src.retrieve import get_collection, retrieve, retrieve_multi_query
 from src.generate import generate
+from typing import Literal
+
 
 app = FastAPI(title="Medical RAG")
 
@@ -14,6 +16,7 @@ collection = get_collection()
 class QueryRequest(BaseModel):
     question: str
     n_results: int = 3
+    technique: Literal["standard", "multi_query"] = "standard"
 
 
 class QueryResponse(BaseModel):
@@ -31,8 +34,12 @@ def query(request: QueryRequest):
     
     query = request.question
     n_docs = request.n_results
+
+    if request.technique == "multi_query":
+        documents = retrieve_multi_query(query, collection, embedding_model, n_docs)
+    else:
+        documents = retrieve(query, collection, embedding_model, n_docs)
     
-    documents = retrieve(query, collection, embedding_model, n_docs)
     answer = generate(query, documents)
 
     sources = [

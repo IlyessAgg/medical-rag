@@ -14,7 +14,12 @@
 
 Building on what I learned with the [medical-abstract-classifier](https://github.com/IlyessAgg/medical-abstract-classifier/tree/main), this project explores **Retrieval-Augmented Generation (RAG)**: embedding medical documents, storing them in a vector database (*ChromaDB*), retrieving relevant context, and generating grounded answers using the *Groq* API.
 
-The main new things here are working with **vector stores** and retrieval-focused embeddings, while reusing tools I’m already familiar with like FastAPI, Docker, and CI.
+A key addition to this project is improving retrieval quality through **multi-query retrieval**, where the original question is reformulated into multiple semantic variations to improve recall in the vector space.
+
+The main new things here are working with **vector stores**, **retrieval strategies (single-query vs multi-query)**, and embedding-based search, while reusing tools I’m already familiar with like FastAPI, Docker, and CI.
+
+<!-- START doctoc -->
+<!-- END doctoc -->
 
 ## Getting Started
 
@@ -71,9 +76,12 @@ curl -X 'POST' \
   -H 'Content-Type: application/json' \
   -d '{
   "question": "Do preoperative statins affect outcomes after cardiac surgery?",
-  "n_results": 3
+  "n_results": 3,
+  "technique": "standard"
 }'
 ```
+
+The possible arguments for `technique` are `standard` or `multi_query`.
 
 ### Example response
 
@@ -146,7 +154,8 @@ We use **ChromaDB** as a persistent vector database:
 - Storage path: `data/chroma`
 - Embeddings: dense vectors from `SentenceTransformers`
 
-> [!NOTE] Distance Metric  
+> [!NOTE] 
+> **Distance Metric**  
 > By default, ChromaDB uses **L2 distance (Euclidean distance)** *(lower = more similar)*.
 >
 > This is important when interpreting retrieval results.  
@@ -199,3 +208,116 @@ Answer: Yes, preoperative statin therapy seems to reduce AF development after CA
 ```
 
 This works because the query **closely matches the underlying documents**.
+
+## Multi-Query Retrieval  
+  
+To improve retrieval robustness, we optionally use a **multi-query strategy**.  
+  
+Instead of embedding only the original query, we first generate several **alternative reformulations** using an LLM, then retrieve documents for each of them.  
+  
+### Motivation  
+  
+Dense retrieval models are sensitive to wording. Two semantically equivalent questions can map to different regions of the embedding space.  
+  
+Multi-query retrieval addresses this by:  
+- Expanding the query into multiple **semantic variations**  
+- Increasing the chance of matching relevant documents  
+- Reducing reliance on a single phrasing  
+
+### Implementation  
+  
+Given a query, we generate *n* reformulations:  
+  
+```python  
+queries = [original_query] + rephrase_query(original_query, n=3)
+```
+
+Each query is then used independently:
+
+```python
+for q in queries:
+  results = retrieve(q, collection, embedding_model, n_results=n_results)
+```
+
+Results are then:  
+
+- **Merged**
+- **Deduplicated** (by document content or ID)
+
+
+### Observed Behavior
+
+We compared standard retrieval (single query) with multi-query retrieval across several biomedical questions.
+
+#### 1. Weak or underspecified queries
+
+Example:
+
+> _“Do statins reduce inflammation?”_
+
+- Single-query retrieval focused on cardiovascular outcomes
+- Multi-query retrieval surfaced additional **immunology-related documents**
+
+**Insight:**  
+Multi-query improves recall when the original query does not align well with the dataset vocabulary.
+
+#### 2. Semantically biased queries
+
+Example:
+
+> _“Is aspirin effective for preventing heart attacks?”_
+
+- Single-query retrieval focused on **treatment of acute myocardial infarction**
+- Increasing `k` did not recover prevention-related documents
+- Multi-query retrieval expanded into **broader cardiovascular contexts**
+
+**Insight:**  
+Multi-query can explore **different semantic directions**, not just a larger neighborhood.
+
+#### 3. Well-aligned queries
+
+Example:
+
+> _“Does vitamin D improve immune response?”_
+
+- Single-query retrieval already returned a highly relevant document
+- Multi-query added marginal results, mostly increasing noise
+
+**Insight:**  
+When the query is already well-formed, multi-query provides limited benefit.
+
+### Multi-Query vs Increasing k
+
+We also compared multi-query retrieval with simply increasing the number of retrieved documents (`k`).
+
+- Increasing `k` expands retrieval **locally** (same semantic region)
+- Multi-query expands retrieval **directionally** (different semantic regions)
+
+In some cases, increasing `k` can approximate multi-query results.  
+However, it fails when the original query is **semantically biased or incomplete**.
+
+### Tradeoffs
+
+**Advantages**
+
+- Higher recall
+- Better handling of biomedical terminology variation
+- More robust to query phrasing
+
+**Limitations**
+
+- Increased latency (multiple LLM calls)
+- More noisy results
+- Requires deduplication (and ideally reranking)
+
+### Key Takeaway
+
+Multi-query retrieval is **not universally beneficial**.
+
+It is most useful when:
+
+- the query is ambiguous
+- the query uses non-clinical wording
+- or the query does not match dataset terminology
+
+When the query is already well-aligned, standard retrieval is often sufficient.

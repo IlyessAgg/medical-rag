@@ -41,6 +41,27 @@ def retrieve(query, collection, embedding_model, n_results=3):
 
     return retrieved_docs
 
+def retrieve_multi_query(query, collection, embedding_model, n_results=3):
+    """
+    Generate multiple phrasings of the query, retrieve for each,
+    deduplicate by pubid, and return combined results.
+    """
+    from src.generate import rephrase_query
+
+    queries = rephrase_query(query)
+    
+    seen_ids = set()
+    combined = []
+
+    for q in queries:
+        results = retrieve(q, collection, embedding_model, n_results=n_results)
+        for doc in results:
+            if doc["pubid"] not in seen_ids:
+                seen_ids.add(doc["pubid"])
+                combined.append(doc)
+
+    return combined
+
 
 if __name__ == "__main__":
     print("Loading collection...")
