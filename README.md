@@ -18,8 +18,36 @@ A key addition to this project is improving retrieval quality through **multi-qu
 
 The main new things here are working with **vector stores**, **retrieval strategies (single-query vs multi-query)**, and embedding-based search, while reusing tools I’m already familiar with like FastAPI, Docker, and CI.
 
-<!-- START doctoc -->
-<!-- END doctoc -->
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Getting Started](#getting-started)
+  - [1. Install dependencies](#1-install-dependencies)
+  - [2. Set environment variables](#2-set-environment-variables)
+  - [3. Build the vector database](#3-build-the-vector-database)
+  - [4. Run the API](#4-run-the-api)
+  - [5. Or run with Docker](#5-or-run-with-docker)
+- [Querying the API](#querying-the-api)
+  - [Example response](#example-response)
+- [Project Structure](#project-structure)
+- [How It Works](#how-it-works)
+  - [Dataset & Preprocessing](#dataset--preprocessing)
+  - [Embeddings](#embeddings)
+  - [Vector Store (ChromaDB)](#vector-store-chromadb)
+  - [Generation (Groq API)](#generation-groq-api)
+  - [Grounded Answering](#grounded-answering)
+- [Multi-Query Retrieval](#multi-query-retrieval)
+  - [Motivation](#motivation)
+  - [Implementation](#implementation)
+  - [Observed Behavior](#observed-behavior)
+    - [1. Weak or underspecified queries](#1-weak-or-underspecified-queries)
+    - [2. Semantically biased queries](#2-semantically-biased-queries)
+    - [3. Well-aligned queries](#3-well-aligned-queries)
+  - [Multi-Query vs Increasing k](#multi-query-vs-increasing-k)
+  - [Tradeoffs](#tradeoffs)
+  - [Key Takeaway](#key-takeaway)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Getting Started
 
