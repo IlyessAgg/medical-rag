@@ -146,7 +146,7 @@ We use **ChromaDB** as a persistent vector database:
 - Storage path: `data/chroma`
 - Embeddings: dense vectors from `SentenceTransformers`
 
-> [!NOTE] Distance Metric
+> [!NOTE] Distance Metric  
 > By default, ChromaDB uses **L2 distance (Euclidean distance)** *(lower = more similar)*.
 >
 > This is important when interpreting retrieval results.  
